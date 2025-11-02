@@ -1,0 +1,504 @@
+g<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: #f5f5f5;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: #555;
+        }
+
+        .mode-btn:hover {
+            background: #e8e8e8;
+            transform: translateY(-2px);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-bottom: 25px;
+            transition: border 0.3s;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .upload-zone {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .upload-zone:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-zone.dragover {
+            border-color: #667eea;
+            background: #e8f0ff;
+            transform: scale(1.02);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        video, #preview {
+            width: 100%;
+            max-height: 500px;
+            border-radius: 15px;
+            background: #000;
+            object-fit: contain;
+            margin-bottom: 20px;
+        }
+
+        .camera-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .result {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .result .emoji {
+            font-size: 100px;
+            margin-bottom: 20px;
+            animation: bounce 0.6s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .result h2 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .result .confidence {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            opacity: 0.95;
+        }
+
+        .confidence-bar {
+            background: rgba(255,255,255,0.3);
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .confidence-fill {
+            background: white;
+            height: 100%;
+            transition: width 1s ease;
+            border-radius: 6px;
+        }
+
+        .all-emotions {
+            margin-top: 25px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .emotion-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .emotion-item:last-child {
+            border-bottom: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .info-banner {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #856404;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎭 Emotion Detection AI</h1>
+        <p class="subtitle">Upload an image or use your camera to detect emotions in real-time</p>
+
+        <div id="modelWarning" class="info-banner hidden">
+            ⚠️ Running in demo mode. Download the model for real predictions.
+        </div>
+
+        <div class="mode-buttons">
+            <button class="mode-btn active" onclick="switchMode('upload')">
+                📁 Upload Image
+            </button>
+            <button class="mode-btn" onclick="switchMode('camera')">
+                📷 Live Camera
+            </button>
+        </div>
+
+        <input type="text" class="name-input" id="nameInput" placeholder="Enter your name (optional)">
+
+        
+        <div id="uploadSection">
+            <div class="upload-zone" id="uploadZone">
+                <div style="font-size: 60px; margin-bottom: 15px;">📤</div>
+                <p style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">
+                    Click or drag image here
+                </p>
+                <p style="color: #999; font-size: 14px;">
+                    Supports: PNG, JPG, JPEG (max 10MB)
+                </p>
+            </div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        
+        <div id="cameraSection" class="hidden">
+            <video id="video" autoplay playsinline></video>
+            <div class="camera-buttons">
+                <button class="btn btn-primary" onclick="capture()">
+                    📸 Capture Photo
+                </button>
+                <button class="btn btn-secondary" onclick="stopCam()">
+                    ⏹️ Stop Camera
+                </button>
+            </div>
+        </div>
+
+        
+        <img id="preview" class="hidden">
+        <canvas id="canvas" class="hidden"></canvas>
+
+       
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p style="font-size: 18px; color: #666;">Analyzing emotion...</p>
+        </div>
+
+        
+        <div id="result" class="result hidden">
+            <div class="emoji" id="emoji"></div>
+            <h2 id="emotion"></h2>
+            <p class="confidence" id="confidence"></p>
+            <div class="confidence-bar">
+                <div class="confidence-fill" id="confBar"></div>
+            </div>
+            <div class="all-emotions" id="allEmotions"></div>
+            <button class="btn btn-primary" style="margin-top: 25px; width: 100%;" onclick="reset()">
+                🔄 Analyze Another
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let mode = 'upload';
+        let stream = null;
+
+        
+        function switchMode(newMode) {
+            mode = newMode;
+            document.querySelectorAll('.mode-btn').forEach(btn => 
+                btn.classList.remove('active')
+            );
+            event.target.classList.add('active');
+
+            if (mode === 'upload') {
+                document.getElementById('uploadSection').classList.remove('hidden');
+                document.getElementById('cameraSection').classList.add('hidden');
+                stopCam();
+            } else {
+                document.getElementById('uploadSection').classList.add('hidden');
+                document.getElementById('cameraSection').classList.remove('hidden');
+                startCam();
+            }
+            reset();
+        }
+
+        
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadZone.onclick = () => fileInput.click();
+
+        uploadZone.ondragover = (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        };
+
+        uploadZone.ondragleave = () => uploadZone.classList.remove('dragover');
+
+        uploadZone.ondrop = (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                processImage(file);
+            }
+        };
+
+        fileInput.onchange = (e) => {
+            if (e.target.files[0]) processImage(e.target.files[0]);
+        };
+
+        function processImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById('preview');
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+                document.getElementById('uploadSection').classList.add('hidden');
+                detectEmotion(e.target.result, 'upload');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Camera handling
+        async function startCam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user' } 
+                });
+                document.getElementById('video').srcObject = stream;
+            } catch (err) {
+                alert('Camera access denied');
+            }
+        }
+
+        function stopCam() {
+            if (stream) {
+                stream.getTracks().forEach(t => t.stop());
+                stream = null;
+            }
+        }
+
+        function capture() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const preview = document.getElementById('preview');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            const imageData = canvas.toDataURL('image/jpeg');
+            preview.src = imageData;
+            preview.classList.remove('hidden');
+            
+            document.getElementById('cameraSection').classList.add('hidden');
+            stopCam();
+            detectEmotion(imageData, 'camera');
+        }
+
+       
+        async function detectEmotion(imageData, source) {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('result').classList.add('hidden');
+
+            const name = document.getElementById('nameInput').value.trim() || 'Anonymous';
+
+            try {
+                const response = await fetch('/detect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData, name, source })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(data);
+                    if (!data.model_loaded) {
+                        document.getElementById('modelWarning').classList.remove('hidden');
+                    }
+                } else {
+                    alert(data.error || 'Detection failed');
+                    reset();
+                }
+            } catch (err) {
+                alert('Connection error');
+                reset();
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        function showResult(data) {
+            document.getElementById('emoji').textContent = data.emoji;
+            document.getElementById('emotion').textContent = 
+                `Detected: ${data.emotion}`;
+            document.getElementById('confidence').textContent = 
+                `Confidence: ${data.confidence}%`;
+            document.getElementById('confBar').style.width = 
+                `${data.confidence}%`;
+
+            
+            const allEmoDiv = document.getElementById('allEmotions');
+            allEmoDiv.innerHTML = '<h3 style="margin-bottom: 15px;">All Predictions:</h3>';
+            
+            Object.entries(data.all_predictions)
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([emotion, conf]) => {
+                    allEmoDiv.innerHTML += `
+                        <div class="emotion-item">
+                            <span>${emotion}</span>
+                            <span>${conf.toFixed(1)}%</span>
+                        </div>
+                    `;
+                });
+
+            document.getElementById('result').classList.remove('hidden');
+        }
+
+        function reset() {
+            document.getElementById('preview').classList.add('hidden');
+            document.getElementById('result').classList.add('hidden');
+            document.getElementById('modelWarning').classList.add('hidden');
+            document.getElementById('nameInput').value = '';
+            fileInput.value = '';
+
+            if (mode === 'upload') {
+                document.getElementById('uploadSection').classList.remove('hidden');
+            } else {
+                document.getElementById('cameraSection').classList.remove('hidden');
+                startCam();
+            }
+        }
+    </script>
+</body>
+</html>
